@@ -1,0 +1,32 @@
+{
+  "name": "bootstrap-dual-select",
+  "description": "Bootstrap dualSelect will makes one select element to be dual select boxes, with full customizable.",
+  "version": "0.1.0",
+  "main": "dist/bootstrap-dual-select.js",
+  "author": {
+    "name": "XQ Kuang <xuqingkuang@gmail.com>"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xuqingkuang/bootstrap-dual-select"
+  },
+  "bugs": {
+    "url": "https://github.com/xuqingkuang/bootstrap-dual-select/issues"
+  },
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "https://github.com/xuqingkuang/bootstrap-dual-select/blob/master/LICENSE"
+    }
+  ],
+  "scripts": {
+    "compile": "coffee -bcm -o ./dist/ ./src/bootstrap-dual-select.coffee && echo Done\n"
+  },
+  "dependencies": {
+    "jquery": "~2.0.0",
+    "bootstrap": "~3.3.0"
+  },
+  "devDependencies": {
+    "coffee-script": "~1.9.0"
+  }
+}

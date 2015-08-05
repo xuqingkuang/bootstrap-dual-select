@@ -36,7 +36,7 @@ do ($ = jQuery) ->
             "<input type=\"text\" placeholder=\"#{messages.filter}\" class=\"form-control filter\">"
             '<select multiple="true" class="form-control" style="height: 160px;"></select>'
           '</div>'
-          '<div class="col-md-2 center-block control-buttons" style="margin-top: 80px;"></div>'
+          '<div class="col-md-2 center-block control-buttons"></div>'
           '<div class="col-md-5 dual-select-container" data-area="selected">'
             '<h4>'
               "<span>#{messages.selected} #{options.title}</span>"
@@ -109,11 +109,15 @@ do ($ = jQuery) ->
         .prop('disabled', yes)
         .appendTo($btnContainer)
 
-    # Display titles
-    $instance.find('h4').hide() if not options.title? or options.title is ''
+    # Adjust controls display/hide and control buttons margin
+    marginTop = 80
+    if not options.title or options.title is ''
+      $instance.find('h4').hide()
+      marginTop -= 34
     if not options.filter or options.filter is ''
-      $instance.find('.control-buttons').css('margin-top': '40px')
       $instance.find('.filter').hide()
+      marginTop -= 34
+    $instance.find('.control-buttons').css('margin-top', "#{marginTop}px")
  
     # Initizlie the selected/unselected options
     [$unselectedSelect, $selectedSelect] = getSelects($instance)

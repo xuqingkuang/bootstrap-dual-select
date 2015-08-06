@@ -1,5 +1,5 @@
 #
-# jQuery Dual Select plugin with Bootstrap v0.1.0
+# jQuery Dual Select plugin with Bootstrap
 # http://kuang.it
 #
 # Copyright (c) 2015 XQ Kuang

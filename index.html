@@ -73,7 +73,10 @@
       <div id="playground" class="form-horizontal">
         <div class="form-groups">
           <label class="col-sm-2 control-label">Result</label>
-          <pre id="result" class="col-sm-10">None</pre>
+          <div class="col-sm-10">
+            <p>Selected <span id="count" class="badge">0</span> items.</p>
+            <pre id="result">[]</pre>
+          </div>
         </div>
       </div>
     </div>
@@ -102,6 +105,7 @@
           evt.preventDefault();
           data = $(this).serializeArray();
           json = JSON.stringify(data, null, 2);
+          $('#count').text(data.length);
           $('#result').text(json);
         });
         // Initialize the dualSelect

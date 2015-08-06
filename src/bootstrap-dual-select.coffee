@@ -88,6 +88,7 @@ do ($ = jQuery) ->
     selectedSelect    : '.dual-select-container[data-area="selected"] select'
     unselectedOptions : 'option:not([selected])' # FIXME: Need a btter selector
     selectedOptions   : 'option:selected'
+    visibleOptions    : 'option:visible'
 
   # Render the page layout from options
   render = ($select, options) ->
@@ -120,7 +121,7 @@ do ($ = jQuery) ->
     $instance.find('.control-buttons').css('margin-top', "#{marginTop}px")
  
     # Initizlie the selected/unselected options
-    [$unselectedSelect, $selectedSelect] = getSelects($instance)
+    [$unselectedSelect, $selectedSelect] = getInstanceSelects($instance)
     $unselectedOptions = $select.find(selectors['unselectedOptions'])
       .clone()
       .prop('selected', no)
@@ -130,9 +131,10 @@ do ($ = jQuery) ->
     $unselectedSelect.append $unselectedOptions
     $selectedSelect.append $selectedOptions
     refreshControls($instance, no, $unselectedSelect, $selectedSelect)
+    refreshOptionsCount($instance, 'option', $unselectedSelect, $selectedSelect)
     $instance
 
-  getSelects = ($instance) ->
+  getInstanceSelects = ($instance) ->
     $unselectedSelect = $instance.find(selectors['unselectedSelect'])
     $selectedSelect = $instance.find(selectors['selectedSelect'])
     [$unselectedSelect, $selectedSelect]
@@ -140,12 +142,10 @@ do ($ = jQuery) ->
   refreshControls = ($instance, cancelSelected, $unselectedSelect, $selectedSelect) ->
     $buttons = $instance.find('.control-buttons button')
     unless $unselectedSelect? and $selectedSelect?
-      [$unselectedSelect, $selectedSelect] = getSelects($instance)
+      [$unselectedSelect, $selectedSelect] = getInstanceSelects($instance)
     $buttons.prop('disabled', yes)
-    unselectedOptionsCount = $unselectedSelect.find('option:visible').size()
-    selectedOptionsCount = $selectedSelect.find('option:visible').size()
-    $instance.find('div[data-area="unselected"] .count').text unselectedOptionsCount
-    $instance.find('div[data-area="selected"] .count').text selectedOptionsCount
+    counts = refreshOptionsCount($instance, null, $unselectedSelect, $selectedSelect)
+    [unselectedOptionsCount, selectedOptionsCount] = counts
     if unselectedOptionsCount > 0
       $buttons.filter('.ats').prop('disabled', no)
     if $unselectedSelect.find(selectors['selectedOptions']).size() > 0
@@ -157,6 +157,16 @@ do ($ = jQuery) ->
     if cancelSelected
       $unselectedSelect.children().prop('selected', no)
       $selectedSelect.children().prop('selected', no)
+
+  refreshOptionsCount = ($instance, optionSelector, $unselectedSelect, $selectedSelect) ->
+    optionSelector = selectors['visibleOptions'] unless optionSelector?
+    unless $unselectedSelect? and $selectedSelect?
+      [$unselectedSelect, $selectedSelect] = getInstanceSelects($instance)
+    unselectedOptionsCount = $unselectedSelect.find(optionSelector).size()
+    selectedOptionsCount = $selectedSelect.find(optionSelector).size()
+    $instance.find('div[data-area="unselected"] .count').text unselectedOptionsCount
+    $instance.find('div[data-area="selected"] .count').text selectedOptionsCount
+    [unselectedOptionsCount, selectedOptionsCount]
 
   refreshSelectedOptions = ($select, $selectedSelect) ->
     # Update orignal select values
@@ -212,21 +222,18 @@ do ($ = jQuery) ->
       'keyup input.filter': (evt) ->
         $el = $(evt.currentTarget)
         $instanceSelect = null
-        refreshCount = ->
-          $el.parent().find('.count').text $instanceSelect.find('option:visible').size()
-  
         delay options.timeout, ->
           value = $el.val().trim().toLowerCase()
           area = $el.parents('.dual-select-container').data('area')
           $instanceSelect = $instance.find(selectors["#{area}Select"])
           if value is ''
             $instanceSelect.children().show()
-            return refreshCount()
-          $instanceSelect.children().hide().filter((i, option) ->
-            $option = $(option)
-            $option.text().toLowerCase().indexOf(value) >= 0 or $option.val() is value
-          ).show()
-          refreshCount()
+          else
+            $instanceSelect.children().hide().filter((i, option) ->
+              $option = $(option)
+              $option.text().toLowerCase().indexOf(value) >= 0 or $option.val() is value
+            ).show()
+          refreshOptionsCount($instance)
 
     for key, listener of events
       keyArray = key.split(' ')

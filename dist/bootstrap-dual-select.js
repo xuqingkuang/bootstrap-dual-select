@@ -2,7 +2,7 @@
 var __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
 (function($) {
-  var addEventsListener, dataName, destroy, getSelects, messages, refreshControls, refreshSelectedOptions, render, selectors, templates;
+  var addEventsListener, dataName, destroy, getInstanceSelects, messages, refreshControls, refreshOptionsCount, refreshSelectedOptions, render, selectors, templates;
   messages = {
     available: 'Available',
     selected: 'Selected',
@@ -34,7 +34,8 @@ var __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; 
     unselectedSelect: '.dual-select-container[data-area="unselected"] select',
     selectedSelect: '.dual-select-container[data-area="selected"] select',
     unselectedOptions: 'option:not([selected])',
-    selectedOptions: 'option:selected'
+    selectedOptions: 'option:selected',
+    visibleOptions: 'option:visible'
   };
   render = function($select, options) {
     var $btnContainer, $instance, $selectedOptions, $selectedSelect, $unselectedOptions, $unselectedSelect, controlButton, controlButtons, dataType, marginTop, _ref;
@@ -60,31 +61,30 @@ var __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; 
       marginTop -= 34;
     }
     $instance.find('.control-buttons').css('margin-top', "" + marginTop + "px");
-    _ref = getSelects($instance), $unselectedSelect = _ref[0], $selectedSelect = _ref[1];
+    _ref = getInstanceSelects($instance), $unselectedSelect = _ref[0], $selectedSelect = _ref[1];
     $unselectedOptions = $select.find(selectors['unselectedOptions']).clone().prop('selected', false);
     $selectedOptions = $select.find(selectors['selectedOptions']).clone().prop('selected', false);
     $unselectedSelect.append($unselectedOptions);
     $selectedSelect.append($selectedOptions);
     refreshControls($instance, false, $unselectedSelect, $selectedSelect);
+    refreshOptionsCount($instance, 'option', $unselectedSelect, $selectedSelect);
     return $instance;
   };
-  getSelects = function($instance) {
+  getInstanceSelects = function($instance) {
     var $selectedSelect, $unselectedSelect;
     $unselectedSelect = $instance.find(selectors['unselectedSelect']);
     $selectedSelect = $instance.find(selectors['selectedSelect']);
     return [$unselectedSelect, $selectedSelect];
   };
   refreshControls = function($instance, cancelSelected, $unselectedSelect, $selectedSelect) {
-    var $buttons, selectedOptionsCount, unselectedOptionsCount, _ref;
+    var $buttons, counts, selectedOptionsCount, unselectedOptionsCount, _ref;
     $buttons = $instance.find('.control-buttons button');
     if (!(($unselectedSelect != null) && ($selectedSelect != null))) {
-      _ref = getSelects($instance), $unselectedSelect = _ref[0], $selectedSelect = _ref[1];
+      _ref = getInstanceSelects($instance), $unselectedSelect = _ref[0], $selectedSelect = _ref[1];
     }
     $buttons.prop('disabled', true);
-    unselectedOptionsCount = $unselectedSelect.children().size();
-    selectedOptionsCount = $selectedSelect.children().size();
-    $instance.find('div[data-area="unselected"] .count').text(unselectedOptionsCount);
-    $instance.find('div[data-area="selected"] .count').text(selectedOptionsCount);
+    counts = refreshOptionsCount($instance, null, $unselectedSelect, $selectedSelect);
+    unselectedOptionsCount = counts[0], selectedOptionsCount = counts[1];
     if (unselectedOptionsCount > 0) {
       $buttons.filter('.ats').prop('disabled', false);
     }
@@ -102,15 +102,30 @@ var __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; 
       return $selectedSelect.children().prop('selected', false);
     }
   };
+  refreshOptionsCount = function($instance, optionSelector, $unselectedSelect, $selectedSelect) {
+    var selectedOptionsCount, unselectedOptionsCount, _ref;
+    if (optionSelector == null) {
+      optionSelector = selectors['visibleOptions'];
+    }
+    if (!(($unselectedSelect != null) && ($selectedSelect != null))) {
+      _ref = getInstanceSelects($instance), $unselectedSelect = _ref[0], $selectedSelect = _ref[1];
+    }
+    unselectedOptionsCount = $unselectedSelect.find(optionSelector).size();
+    selectedOptionsCount = $selectedSelect.find(optionSelector).size();
+    $instance.find('div[data-area="unselected"] .count').text(unselectedOptionsCount);
+    $instance.find('div[data-area="selected"] .count').text(selectedOptionsCount);
+    return [unselectedOptionsCount, selectedOptionsCount];
+  };
   refreshSelectedOptions = function($select, $selectedSelect) {
     var selectedValues;
     selectedValues = $selectedSelect.children().map(function(i, el) {
       return $(el).val();
     });
-    return $select.children().prop('selected', false).filter(function(i, el) {
+    $select.children().prop('selected', false).filter(function(i, el) {
       var _ref;
       return _ref = $(el).val(), __indexOf.call(selectedValues, _ref) >= 0;
     }).prop('selected', true);
+    return $select.trigger('change');
   };
   addEventsListener = function($select, $instance, options) {
     var delay, eventName, events, key, keyArray, listener, selector;
@@ -167,27 +182,24 @@ var __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; 
         return refreshSelectedOptions($select, $selectedSelect);
       },
       'keyup input.filter': function(evt) {
-        var $el, refreshCount;
+        var $el, $instanceSelect;
         $el = $(evt.currentTarget);
-        $select = null;
-        refreshCount = function() {
-          return $el.parent().find('.count').text($select.find('option:visible').size());
-        };
+        $instanceSelect = null;
         return delay(options.timeout, function() {
           var area, value;
           value = $el.val().trim().toLowerCase();
           area = $el.parents('.dual-select-container').data('area');
-          $select = $instance.find(selectors["" + area + "Select"]);
+          $instanceSelect = $instance.find(selectors["" + area + "Select"]);
           if (value === '') {
-            $select.children().show();
-            return refreshCount();
+            $instanceSelect.children().show();
+          } else {
+            $instanceSelect.children().hide().filter(function(i, option) {
+              var $option;
+              $option = $(option);
+              return $option.text().toLowerCase().indexOf(value) >= 0 || $option.val() === value;
+            }).show();
           }
-          $select.children().hide().filter(function(i, option) {
-            var $option;
-            $option = $(option);
-            return $option.text().toLowerCase().indexOf(value) >= 0 || $option.val() === value;
-          }).show();
-          return refreshCount();
+          return refreshOptionsCount($instance);
         });
       }
     };

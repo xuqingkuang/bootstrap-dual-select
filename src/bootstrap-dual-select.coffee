@@ -142,8 +142,8 @@ do ($ = jQuery) ->
     unless $unselectedSelect? and $selectedSelect?
       [$unselectedSelect, $selectedSelect] = getSelects($instance)
     $buttons.prop('disabled', yes)
-    unselectedOptionsCount = $unselectedSelect.children().size()
-    selectedOptionsCount = $selectedSelect.children().size()
+    unselectedOptionsCount = $unselectedSelect.find('option:visible').size()
+    selectedOptionsCount = $selectedSelect.find('option:visible').size()
     $instance.find('div[data-area="unselected"] .count').text unselectedOptionsCount
     $instance.find('div[data-area="selected"] .count').text selectedOptionsCount
     if unselectedOptionsCount > 0
@@ -159,11 +159,14 @@ do ($ = jQuery) ->
       $selectedSelect.children().prop('selected', no)
 
   refreshSelectedOptions = ($select, $selectedSelect) ->
+    # Update orignal select values
     selectedValues = $selectedSelect.children().map (i, el) ->
        $(el).val()
     $select.children().prop('selected', no).filter((i, el) ->
       $(el).val() in selectedValues
     ).prop('selected', yes)
+    # Trigger original select change event
+    $select.trigger('change')
 
   # Listen events and do the actions
   addEventsListener = ($select, $instance, options) ->
@@ -208,18 +211,18 @@ do ($ = jQuery) ->
         refreshSelectedOptions($select, $selectedSelect)
       'keyup input.filter': (evt) ->
         $el = $(evt.currentTarget)
-        $select = null
+        $instanceSelect = null
         refreshCount = ->
-          $el.parent().find('.count').text $select.find('option:visible').size()
+          $el.parent().find('.count').text $instanceSelect.find('option:visible').size()
   
         delay options.timeout, ->
           value = $el.val().trim().toLowerCase()
           area = $el.parents('.dual-select-container').data('area')
-          $select = $instance.find(selectors["#{area}Select"])
+          $instanceSelect = $instance.find(selectors["#{area}Select"])
           if value is ''
-            $select.children().show()
+            $instanceSelect.children().show()
             return refreshCount()
-          $select.children().hide().filter((i, option) ->
+          $instanceSelect.children().hide().filter((i, option) ->
             $option = $(option)
             $option.text().toLowerCase().indexOf(value) >= 0 or $option.val() is value
           ).show()

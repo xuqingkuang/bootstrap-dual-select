@@ -1,7 +1,7 @@
 {
   "name": "bootstrap-dual-select",
   "description": "Bootstrap dualSelect will makes one select element to be dual select boxes, with full customizable.",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "main": "dist/bootstrap-dual-select.js",
   "license": "MIT",
   "ignore": [

@@ -124,12 +124,22 @@ do ($ = jQuery) ->
  
     # Initizlie the selected/unselected options
     [$unselectedSelect, $selectedSelect] = getInstanceSelects($instance)
-    $unselectedOptions = $select.find(selectors['unselectedOptions'])
-      .clone()
-      .prop('selected', no)
     $selectedOptions = $select.find(selectors['selectedOptions'])
       .clone()
       .prop('selected', no)
+    # FIXME: Need a better solution to get the unselected options
+    # $unselectedOptions = $select.find(selectors['unselectedOptions'])
+    #  .clone()
+    #  .prop('selected', no)
+    # Here's a workaround
+    selectedOptionsValue = $selectedOptions.map (index, el) -> $(el).val()
+    $unselectedOptions = $select.children().filter((index, el) ->
+      $(el).val() not in selectedOptionsValue
+    )
+      .clone()
+      .prop('selected', no)
+
+    # Render the selects
     $unselectedSelect.append $unselectedOptions
     $selectedSelect.append $selectedOptions
     refreshControls($instance, no, options, $unselectedSelect, $selectedSelect)

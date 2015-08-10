@@ -39,7 +39,7 @@ var __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; 
     visibleOptions: 'option:visible'
   };
   render = function($select, options) {
-    var $btnContainer, $instance, $selectedOptions, $selectedSelect, $unselectedOptions, $unselectedSelect, controlButton, controlButtons, dataType, marginTop, _ref;
+    var $btnContainer, $instance, $selectedOptions, $selectedSelect, $unselectedOptions, $unselectedSelect, controlButton, controlButtons, dataType, marginTop, selectedOptionsValue, _ref;
     $instance = $(templates.layout(options));
     controlButtons = {
       allToSelected: 'ats',
@@ -63,8 +63,14 @@ var __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; 
     }
     $instance.find('.control-buttons').css('margin-top', "" + marginTop + "px");
     _ref = getInstanceSelects($instance), $unselectedSelect = _ref[0], $selectedSelect = _ref[1];
-    $unselectedOptions = $select.find(selectors['unselectedOptions']).clone().prop('selected', false);
     $selectedOptions = $select.find(selectors['selectedOptions']).clone().prop('selected', false);
+    selectedOptionsValue = $selectedOptions.map(function(index, el) {
+      return $(el).val();
+    });
+    $unselectedOptions = $select.children().filter(function(index, el) {
+      var _ref1;
+      return _ref1 = $(el).val(), __indexOf.call(selectedOptionsValue, _ref1) < 0;
+    }).clone().prop('selected', false);
     $unselectedSelect.append($unselectedOptions);
     $selectedSelect.append($selectedOptions);
     refreshControls($instance, false, options, $unselectedSelect, $selectedSelect);
@@ -78,8 +84,9 @@ var __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; 
     return [$unselectedSelect, $selectedSelect];
   };
   refreshControls = function($instance, cancelSelected, options, $unselectedSelect, $selectedSelect) {
-    var $buttons, counts, selectedOptionsCount, unselectedOptionsCount, _ref;
+    var $buttons, counts, maxReached, selectedOptionsCount, unselectedOptionsCount, _ref;
     $buttons = $instance.find('.control-buttons button');
+    maxReached = false;
     if (!(($unselectedSelect != null) && ($selectedSelect != null))) {
       _ref = getInstanceSelects($instance), $unselectedSelect = _ref[0], $selectedSelect = _ref[1];
     }
@@ -104,13 +111,19 @@ var __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; 
         $buttons.filter('.ats').prop('disabled', true);
         $buttons.filter('.uts').prop('disabled', true);
         $unselectedSelect.prop('disabled', true);
+        maxReached = true;
       }
       if ($unselectedSelect.find(':selected').size() + selectedOptionsCount > options.maxSelectable) {
         $buttons.filter('.ats').prop('disabled', true);
         $buttons.filter('.uts').prop('disabled', true);
+        maxReached = true;
       }
       if (unselectedOptionsCount > options.maxSelectable) {
         $buttons.filter('.ats').prop('disabled', true);
+        maxReached = true;
+      }
+      if (maxReached) {
+        $instance.trigger('maxReached');
       }
     }
     if (cancelSelected) {

@@ -29,11 +29,12 @@ There are currently two ways to use this component. First up is by using html5
 Javascript Object. The variable names are the same all around and can be even
 mixed and matched within the select or Javascript. The current options are: 
 
-| Option       | Type    | Default    | Description |
-| ------------ | ------- | ---------- | ----------- |
-| `title`      | String  | Item       | The title of the control. |
-| `timeout`    | UInt    | 300        | Timeout of searching with the filter. |
-| `filter`     | Boolean | true       | Filter display. |
+| Option         | Type    | Default    | Description |
+| -------------- | ------- | ---------- | ----------- |
+| `filter`       | Boolean | true       | Filter display. |
+| `maxSelectable`| UInt    | 0          | Max selectable items, default 0 is unlimited. |
+| `title`        | String  | Item       | The title of the control. |
+| `timeout`      | UInt    | 300        | Timeout of searching with the filter. |
 
 Bootstrap Dual Select could set default templates, language translations, and
 default options with `$.dualSelect`, all of options are opened for customization.

@@ -21,7 +21,7 @@ do ($ = jQuery) ->
     selected  : 'Selected'
     showing   : ' is showing '
     filter    : 'Filter'
-
+    
   # Template
   # TODO: Use simple template engine to rewrite the code.
   templates =
@@ -74,12 +74,14 @@ do ($ = jQuery) ->
     templates: templates
     messages: messages
     defaults:
+      # Filter is enabled by default
+      filter              : yes
+      # Max selectable items
+      maxSelectable       : 0
       # Timeout for when a filter search is started.
       timeout             : 300
       # Title of the dual list box.
       title               : 'Items'
-      # Filter is enabled by default
-      filter              : yes
 
   # Intern varibles
   dataName = 'dualSelect'
@@ -130,7 +132,7 @@ do ($ = jQuery) ->
       .prop('selected', no)
     $unselectedSelect.append $unselectedOptions
     $selectedSelect.append $selectedOptions
-    refreshControls($instance, no, $unselectedSelect, $selectedSelect)
+    refreshControls($instance, no, options, $unselectedSelect, $selectedSelect)
     refreshOptionsCount($instance, 'option', $unselectedSelect, $selectedSelect)
     $instance
 
@@ -139,11 +141,13 @@ do ($ = jQuery) ->
     $selectedSelect = $instance.find(selectors['selectedSelect'])
     [$unselectedSelect, $selectedSelect]
 
-  refreshControls = ($instance, cancelSelected, $unselectedSelect, $selectedSelect) ->
+  refreshControls = ($instance, cancelSelected, options, $unselectedSelect, $selectedSelect) ->
     $buttons = $instance.find('.control-buttons button')
+    maxReached = no
     unless $unselectedSelect? and $selectedSelect?
       [$unselectedSelect, $selectedSelect] = getInstanceSelects($instance)
     $buttons.prop('disabled', yes)
+    $unselectedSelect.prop('disabled', no)
     counts = refreshOptionsCount($instance, null, $unselectedSelect, $selectedSelect)
     [unselectedOptionsCount, selectedOptionsCount] = counts
     if unselectedOptionsCount > 0
@@ -154,6 +158,23 @@ do ($ = jQuery) ->
       $buttons.filter('.stu').prop('disabled', no)
     if selectedOptionsCount > 0
       $buttons.filter('.atu').prop('disabled', no)
+    # Max selectable option
+    if options.maxSelectable isnt 0
+      if selectedOptionsCount >= options.maxSelectable
+        $buttons.filter('.ats').prop('disabled', yes)
+        $buttons.filter('.uts').prop('disabled', yes)
+        $unselectedSelect.prop('disabled', yes)
+        maxReached = yes
+      if $unselectedSelect.find(':selected').size() + selectedOptionsCount > options.maxSelectable
+        $buttons.filter('.ats').prop('disabled', yes)
+        $buttons.filter('.uts').prop('disabled', yes)
+        maxReached = yes
+      if unselectedOptionsCount > options.maxSelectable
+        $buttons.filter('.ats').prop('disabled', yes)
+        maxReached = yes
+      if maxReached
+        $instance.trigger('maxReached')
+    # Cancel the selected attributes
     if cancelSelected
       $unselectedSelect.children().prop('selected', no)
       $selectedSelect.children().prop('selected', no)
@@ -189,7 +210,7 @@ do ($ = jQuery) ->
     events =
       # Select changed event, toggle the controll buttons disabled status.
       'change select': (evt) ->
-        refreshControls($instance, no)
+        refreshControls($instance, no, options)
       'dblclick select': (evt) ->
         $el = $(evt.currentTarget)
         if $el.parents('.dual-select-container').data('area') is 'selected'
@@ -216,7 +237,7 @@ do ($ = jQuery) ->
 
         $el = $(evt.currentTarget)
         callbacks[$el.data('control')]()
-        refreshControls($instance, yes)
+        refreshControls($instance, yes, options)
         $instance.find('.uts, .stu').prop('disabled', yes)
         refreshSelectedOptions($select, $selectedSelect)
       'keyup input.filter': (evt) ->
@@ -278,6 +299,9 @@ do ($ = jQuery) ->
 
       # Merge the options, generate final options
       options = $.extend {}, $.dualSelect.defaults, htmlOptions, options
+      options.maxSelectable = parseInt options.maxSelectable
+      if isNaN options.maxSelectable
+        throw 'Option maxSelectable must be integer'
 
       # Destroy previous dualSelect instance and re-construct.
       destroy($select) if $select.data(dataName)?

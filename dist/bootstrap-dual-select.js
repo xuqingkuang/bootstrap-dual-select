@@ -24,9 +24,10 @@ var __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; 
     templates: templates,
     messages: messages,
     defaults: {
+      filter: true,
+      maxSelectable: 0,
       timeout: 300,
-      title: 'Items',
-      filter: true
+      title: 'Items'
     }
   };
   dataName = 'dualSelect';
@@ -66,7 +67,7 @@ var __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; 
     $selectedOptions = $select.find(selectors['selectedOptions']).clone().prop('selected', false);
     $unselectedSelect.append($unselectedOptions);
     $selectedSelect.append($selectedOptions);
-    refreshControls($instance, false, $unselectedSelect, $selectedSelect);
+    refreshControls($instance, false, options, $unselectedSelect, $selectedSelect);
     refreshOptionsCount($instance, 'option', $unselectedSelect, $selectedSelect);
     return $instance;
   };
@@ -76,13 +77,14 @@ var __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; 
     $selectedSelect = $instance.find(selectors['selectedSelect']);
     return [$unselectedSelect, $selectedSelect];
   };
-  refreshControls = function($instance, cancelSelected, $unselectedSelect, $selectedSelect) {
+  refreshControls = function($instance, cancelSelected, options, $unselectedSelect, $selectedSelect) {
     var $buttons, counts, selectedOptionsCount, unselectedOptionsCount, _ref;
     $buttons = $instance.find('.control-buttons button');
     if (!(($unselectedSelect != null) && ($selectedSelect != null))) {
       _ref = getInstanceSelects($instance), $unselectedSelect = _ref[0], $selectedSelect = _ref[1];
     }
     $buttons.prop('disabled', true);
+    $unselectedSelect.prop('disabled', false);
     counts = refreshOptionsCount($instance, null, $unselectedSelect, $selectedSelect);
     unselectedOptionsCount = counts[0], selectedOptionsCount = counts[1];
     if (unselectedOptionsCount > 0) {
@@ -96,6 +98,20 @@ var __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; 
     }
     if (selectedOptionsCount > 0) {
       $buttons.filter('.atu').prop('disabled', false);
+    }
+    if (options.maxSelectable !== 0) {
+      if (selectedOptionsCount >= options.maxSelectable) {
+        $buttons.filter('.ats').prop('disabled', true);
+        $buttons.filter('.uts').prop('disabled', true);
+        $unselectedSelect.prop('disabled', true);
+      }
+      if ($unselectedSelect.find(':selected').size() + selectedOptionsCount > options.maxSelectable) {
+        $buttons.filter('.ats').prop('disabled', true);
+        $buttons.filter('.uts').prop('disabled', true);
+      }
+      if (unselectedOptionsCount > options.maxSelectable) {
+        $buttons.filter('.ats').prop('disabled', true);
+      }
     }
     if (cancelSelected) {
       $unselectedSelect.children().prop('selected', false);
@@ -139,7 +155,7 @@ var __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; 
     })();
     events = {
       'change select': function(evt) {
-        return refreshControls($instance, false);
+        return refreshControls($instance, false, options);
       },
       'dblclick select': function(evt) {
         var $el;
@@ -177,7 +193,7 @@ var __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; 
         };
         $el = $(evt.currentTarget);
         callbacks[$el.data('control')]();
-        refreshControls($instance, true);
+        refreshControls($instance, true, options);
         $instance.find('.uts, .stu').prop('disabled', true);
         return refreshSelectedOptions($select, $selectedSelect);
       },
@@ -243,6 +259,10 @@ var __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; 
         maxAllBtn: $select.data('maxAllBtn')
       };
       options = $.extend({}, $.dualSelect.defaults, htmlOptions, options);
+      options.maxSelectable = parseInt(options.maxSelectable);
+      if (isNaN(options.maxSelectable)) {
+        throw 'Option maxSelectable must be integer';
+      }
       if ($select.data(dataName) != null) {
         destroy($select);
       }

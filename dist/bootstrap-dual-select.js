@@ -2,7 +2,7 @@
 var indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
 (function($) {
-  var addEventsListener, dataName, destroy, getSelects, messages, refreshControls, refreshSelectedOptions, render, selectors, templates;
+  var addEventsListener, dataName, destroy, getInstanceSelects, messages, refreshControls, refreshOptionsCount, refreshSelectedOptions, render, selectors, templates;
   messages = {
     available: 'Available',
     selected: 'Selected',
@@ -11,7 +11,7 @@ var indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i 
   };
   templates = {
     'layout': function(options) {
-      return ['<div class="row dual-select">', '<div class="col-md-5 dual-select-container" data-area="unselected">', '<h4>', "<span>" + messages.available + " " + options.title + "</span>", "<small>" + messages.showing + "<span class=\"badge count\">0</span></small>", '</h4>', "<input type=\"text\" placeholder=\"" + messages.filter + "\" class=\"form-control filter\">", '<select multiple="true" class="form-control" style="height: 160px;"></select>', '</div>', '<div class="col-md-2 center-block control-buttons" style="margin-top: 80px;"></div>', '<div class="col-md-5 dual-select-container" data-area="selected">', '<h4>', "<span>" + messages.selected + " " + options.title + "</span>", "<small>" + messages.showing + "<span class=\"badge count\">0</span></small>", '</h4>', "<input type=\"text\" placeholder=\"" + messages.filter + "\" class=\"form-control filter\">", '<select multiple="true" class="form-control" style="height: 160px;"></select>', '</div>', '</div>'].join('');
+      return ['<div class="row dual-select">', '<div class="col-md-5 dual-select-container" data-area="unselected">', '<h4>', "<span>" + messages.available + " " + options.title + "</span>", "<small>" + messages.showing + "<span class=\"badge count\">0</span></small>", '</h4>', "<input type=\"text\" placeholder=\"" + messages.filter + "\" class=\"form-control filter\">", '<select multiple="true" class="form-control" style="height: 160px;"></select>', '</div>', '<div class="col-md-2 center-block control-buttons"></div>', '<div class="col-md-5 dual-select-container" data-area="selected">', '<h4>', "<span>" + messages.selected + " " + options.title + "</span>", "<small>" + messages.showing + "<span class=\"badge count\">0</span></small>", '</h4>', "<input type=\"text\" placeholder=\"" + messages.filter + "\" class=\"form-control filter\">", '<select multiple="true" class="form-control" style="height: 160px;"></select>', '</div>', '</div>'].join('');
     },
     'buttons': {
       'allToSelected': ['<button type="button" class="btn btn-default col-md-8 col-md-offset-2">', '<span class="glyphicon glyphicon-fast-forward"></span>', '</button>'].join(''),
@@ -24,9 +24,10 @@ var indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i 
     templates: templates,
     messages: messages,
     defaults: {
+      filter: true,
+      maxSelectable: 0,
       timeout: 300,
-      title: 'Items',
-      filter: true
+      title: 'Items'
     }
   };
   dataName = 'dualSelect';
@@ -34,10 +35,11 @@ var indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i 
     unselectedSelect: '.dual-select-container[data-area="unselected"] select',
     selectedSelect: '.dual-select-container[data-area="selected"] select',
     unselectedOptions: 'option:not([selected])',
-    selectedOptions: 'option:selected'
+    selectedOptions: 'option:selected',
+    visibleOptions: 'option:visible'
   };
   render = function($select, options) {
-    var $btnContainer, $instance, $selectedOptions, $selectedSelect, $unselectedOptions, $unselectedSelect, controlButton, controlButtons, dataType, ref;
+    var $btnContainer, $instance, $selectedOptions, $selectedSelect, $unselectedOptions, $unselectedSelect, controlButton, controlButtons, dataType, marginTop, ref, selectedOptionsValue;
     $instance = $(templates.layout(options));
     controlButtons = {
       allToSelected: 'ats',
@@ -50,66 +52,109 @@ var indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i 
       dataType = controlButtons[controlButton];
       $(templates.buttons[controlButton]).addClass(dataType).data('control', dataType).prop('disabled', true).appendTo($btnContainer);
     }
-    if ((options.title == null) || options.title === '') {
+    marginTop = 80;
+    if (!options.title || options.title === '') {
       $instance.find('h4').hide();
+      marginTop -= 34;
     }
     if (!options.filter || options.filter === '') {
-      $instance.find('.control-buttons').css({
-        'margin-top': '40px'
-      });
       $instance.find('.filter').hide();
+      marginTop -= 34;
     }
-    ref = getSelects($instance), $unselectedSelect = ref[0], $selectedSelect = ref[1];
-    $unselectedOptions = $select.find(selectors['unselectedOptions']).clone().prop('selected', false);
+    $instance.find('.control-buttons').css('margin-top', marginTop + "px");
+    ref = getInstanceSelects($instance), $unselectedSelect = ref[0], $selectedSelect = ref[1];
     $selectedOptions = $select.find(selectors['selectedOptions']).clone().prop('selected', false);
+    selectedOptionsValue = $selectedOptions.map(function(index, el) {
+      return $(el).val();
+    });
+    $unselectedOptions = $select.children().filter(function(index, el) {
+      var ref1;
+      return ref1 = $(el).val(), indexOf.call(selectedOptionsValue, ref1) < 0;
+    }).clone().prop('selected', false);
     $unselectedSelect.append($unselectedOptions);
     $selectedSelect.append($selectedOptions);
-    refreshControls($instance, false, $unselectedSelect, $selectedSelect);
+    refreshControls($instance, false, options, $unselectedSelect, $selectedSelect);
+    refreshOptionsCount($instance, 'option', $unselectedSelect, $selectedSelect);
     return $instance;
   };
-  getSelects = function($instance) {
+  getInstanceSelects = function($instance) {
     var $selectedSelect, $unselectedSelect;
     $unselectedSelect = $instance.find(selectors['unselectedSelect']);
     $selectedSelect = $instance.find(selectors['selectedSelect']);
     return [$unselectedSelect, $selectedSelect];
   };
-  refreshControls = function($instance, cancelSelected, $unselectedSelect, $selectedSelect) {
-    var $buttons, ref, selectedOptionsCount, unselectedOptionsCount;
+  refreshControls = function($instance, cancelSelected, options, $unselectedSelect, $selectedSelect) {
+    var $buttons, counts, maxReached, ref, selectedOptionsCount, unselectedOptionsCount;
     $buttons = $instance.find('.control-buttons button');
+    maxReached = false;
     if (!(($unselectedSelect != null) && ($selectedSelect != null))) {
-      ref = getSelects($instance), $unselectedSelect = ref[0], $selectedSelect = ref[1];
+      ref = getInstanceSelects($instance), $unselectedSelect = ref[0], $selectedSelect = ref[1];
     }
     $buttons.prop('disabled', true);
-    unselectedOptionsCount = $unselectedSelect.children().size();
-    selectedOptionsCount = $selectedSelect.children().size();
-    $instance.find('div[data-area="unselected"] .count').text(unselectedOptionsCount);
-    $instance.find('div[data-area="selected"] .count').text(selectedOptionsCount);
+    $unselectedSelect.prop('disabled', false);
+    counts = refreshOptionsCount($instance, 'option', $unselectedSelect, $selectedSelect);
+    unselectedOptionsCount = counts[0], selectedOptionsCount = counts[1];
     if (unselectedOptionsCount > 0) {
       $buttons.filter('.ats').prop('disabled', false);
     }
-    if ($unselectedSelect.find(selectors['selectedOptions']).size() > 0) {
+    if ($unselectedSelect.find(selectors['selectedOptions']).length > 0) {
       $buttons.filter('.uts').prop('disabled', false);
     }
-    if ($selectedSelect.find(selectors['selectedOptions']).size() > 0) {
+    if ($selectedSelect.find(selectors['selectedOptions']).length > 0) {
       $buttons.filter('.stu').prop('disabled', false);
     }
     if (selectedOptionsCount > 0) {
       $buttons.filter('.atu').prop('disabled', false);
+    }
+    if (options.maxSelectable !== 0) {
+      if (selectedOptionsCount >= options.maxSelectable) {
+        $buttons.filter('.ats').prop('disabled', true);
+        $buttons.filter('.uts').prop('disabled', true);
+        $unselectedSelect.prop('disabled', true);
+        maxReached = true;
+      }
+      if ($unselectedSelect.find(':selected').length + selectedOptionsCount > options.maxSelectable) {
+        $buttons.filter('.ats').prop('disabled', true);
+        $buttons.filter('.uts').prop('disabled', true);
+        maxReached = true;
+      }
+      if (unselectedOptionsCount > options.maxSelectable) {
+        $buttons.filter('.ats').prop('disabled', true);
+        maxReached = true;
+      }
+      if (maxReached) {
+        $instance.trigger('maxReached');
+      }
     }
     if (cancelSelected) {
       $unselectedSelect.children().prop('selected', false);
       return $selectedSelect.children().prop('selected', false);
     }
   };
+  refreshOptionsCount = function($instance, optionSelector, $unselectedSelect, $selectedSelect) {
+    var ref, selectedOptionsCount, unselectedOptionsCount;
+    if (optionSelector == null) {
+      optionSelector = selectors['visibleOptions'];
+    }
+    if (!(($unselectedSelect != null) && ($selectedSelect != null))) {
+      ref = getInstanceSelects($instance), $unselectedSelect = ref[0], $selectedSelect = ref[1];
+    }
+    unselectedOptionsCount = $unselectedSelect.find(optionSelector).length;
+    selectedOptionsCount = $selectedSelect.find(optionSelector).length;
+    $instance.find('div[data-area="unselected"] .count').text(unselectedOptionsCount);
+    $instance.find('div[data-area="selected"] .count').text(selectedOptionsCount);
+    return [unselectedOptionsCount, selectedOptionsCount];
+  };
   refreshSelectedOptions = function($select, $selectedSelect) {
     var selectedValues;
     selectedValues = $selectedSelect.children().map(function(i, el) {
       return $(el).val();
     });
-    return $select.children().prop('selected', false).filter(function(i, el) {
+    $select.children().prop('selected', false).filter(function(i, el) {
       var ref;
       return ref = $(el).val(), indexOf.call(selectedValues, ref) >= 0;
     }).prop('selected', true);
+    return $select.trigger('change');
   };
   addEventsListener = function($select, $instance, options) {
     var delay, eventName, events, key, keyArray, listener, selector;
@@ -123,7 +168,7 @@ var indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i 
     })();
     events = {
       'change select': function(evt) {
-        return refreshControls($instance, false);
+        return refreshControls($instance, false, options);
       },
       'dblclick select': function(evt) {
         var $el;
@@ -161,32 +206,29 @@ var indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i 
         };
         $el = $(evt.currentTarget);
         callbacks[$el.data('control')]();
-        refreshControls($instance, true);
+        refreshControls($instance, true, options);
         $instance.find('.uts, .stu').prop('disabled', true);
         return refreshSelectedOptions($select, $selectedSelect);
       },
       'keyup input.filter': function(evt) {
-        var $el, refreshCount;
+        var $el, $instanceSelect;
         $el = $(evt.currentTarget);
-        $select = null;
-        refreshCount = function() {
-          return $el.parent().find('.count').text($select.find('option:visible').size());
-        };
+        $instanceSelect = null;
         return delay(options.timeout, function() {
           var area, value;
           value = $el.val().trim().toLowerCase();
           area = $el.parents('.dual-select-container').data('area');
-          $select = $instance.find(selectors[area + "Select"]);
+          $instanceSelect = $instance.find(selectors[area + "Select"]);
           if (value === '') {
-            $select.children().show();
-            return refreshCount();
+            $instanceSelect.children().show();
+          } else {
+            $instanceSelect.children().hide().filter(function(i, option) {
+              var $option;
+              $option = $(option);
+              return $option.text().toLowerCase().indexOf(value) >= 0 || $option.val() === value;
+            }).show();
           }
-          $select.children().hide().filter(function(i, option) {
-            var $option;
-            $option = $(option);
-            return $option.text().toLowerCase().indexOf(value) >= 0 || $option.val() === value;
-          }).show();
-          return refreshCount();
+          return refreshOptionsCount($instance);
         });
       }
     };
@@ -212,7 +254,7 @@ var indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i 
       if (this.nodeName !== 'SELECT') {
         throw 'dualSelect only accept select element';
       }
-      if ($(this).parents('.dual-select').size() > 0) {
+      if ($(this).parents('.dual-select').length > 0) {
         throw 'dualSelect can not be initizied in dualSelect';
       }
     });
@@ -230,6 +272,10 @@ var indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i 
         maxAllBtn: $select.data('maxAllBtn')
       };
       options = $.extend({}, $.dualSelect.defaults, htmlOptions, options);
+      options.maxSelectable = parseInt(options.maxSelectable);
+      if (isNaN(options.maxSelectable)) {
+        throw 'Option maxSelectable must be integer';
+      }
       if ($select.data(dataName) != null) {
         destroy($select);
       }

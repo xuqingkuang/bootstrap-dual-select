@@ -1,5 +1,11 @@
 # Bootstrap Dual Select
 
+[![NPM version](http://img.shields.io/npm/v/bootstrap-dual-select.svg?style=flat-square)](http://npmjs.org/package/bootstrap-dual-select)
+[![Bower](https://img.shields.io/bower/v/bootstrap-dual-select.svg?style=flat-square)](https://github.com/xuqingkuang/bootstrap-dual-select)
+[![Dependency Status](https://david-dm.org/xuqingkuang/bootstrap-dual-select.svg)](https://david-dm.org/xuqingkuang/bootstrap-dual-select)
+[![devDependency Status](https://david-dm.org/xuqingkuang/bootstrap-dual-select/dev-status.svg)](https://david-dm.org/xuqingkuang/bootstrap-dual-select#info=devDependencies)
+[![npm download](https://img.shields.io/npm/dm/bootstrap-dual-select.svg?style=flat-square)](https://npmjs.org/package/bootstrap-dual-select)
+
 ## Demo
 
 [Click here for demo](http://xuqingkuang.github.io/bootstrap-dual-select/index.html)
@@ -75,7 +81,7 @@ Enter into the project and start build:
 ```
 The MIT License (MIT)
 
-Copyright (c) 2014 Geodan B.V. (Alex van den Hoogen)
+Copyright (c) 2015-2018 XQ Kuang <x@kxq.io>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

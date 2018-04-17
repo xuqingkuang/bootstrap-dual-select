@@ -1,6 +1,6 @@
 #
 # jQuery Dual Select plugin with Bootstrap
-# http://kuang.it
+# http://kxq.io
 #
 # Copyright (c) 2015 XQ Kuang
 # Created by: XQ Kuang <xuqingkuang@gmail.com>
@@ -158,13 +158,13 @@ do ($ = jQuery) ->
       [$unselectedSelect, $selectedSelect] = getInstanceSelects($instance)
     $buttons.prop('disabled', yes)
     $unselectedSelect.prop('disabled', no)
-    counts = refreshOptionsCount($instance, null, $unselectedSelect, $selectedSelect)
+    counts = refreshOptionsCount($instance, 'option', $unselectedSelect, $selectedSelect)
     [unselectedOptionsCount, selectedOptionsCount] = counts
     if unselectedOptionsCount > 0
       $buttons.filter('.ats').prop('disabled', no)
-    if $unselectedSelect.find(selectors['selectedOptions']).size() > 0
+    if $unselectedSelect.find(selectors['selectedOptions']).length > 0
       $buttons.filter('.uts').prop('disabled', no)
-    if $selectedSelect.find(selectors['selectedOptions']).size() > 0
+    if $selectedSelect.find(selectors['selectedOptions']).length > 0
       $buttons.filter('.stu').prop('disabled', no)
     if selectedOptionsCount > 0
       $buttons.filter('.atu').prop('disabled', no)
@@ -175,7 +175,7 @@ do ($ = jQuery) ->
         $buttons.filter('.uts').prop('disabled', yes)
         $unselectedSelect.prop('disabled', yes)
         maxReached = yes
-      if $unselectedSelect.find(':selected').size() + selectedOptionsCount > options.maxSelectable
+      if $unselectedSelect.find(':selected').length + selectedOptionsCount > options.maxSelectable
         $buttons.filter('.ats').prop('disabled', yes)
         $buttons.filter('.uts').prop('disabled', yes)
         maxReached = yes
@@ -193,8 +193,8 @@ do ($ = jQuery) ->
     optionSelector = selectors['visibleOptions'] unless optionSelector?
     unless $unselectedSelect? and $selectedSelect?
       [$unselectedSelect, $selectedSelect] = getInstanceSelects($instance)
-    unselectedOptionsCount = $unselectedSelect.find(optionSelector).size()
-    selectedOptionsCount = $selectedSelect.find(optionSelector).size()
+    unselectedOptionsCount = $unselectedSelect.find(optionSelector).length
+    selectedOptionsCount = $selectedSelect.find(optionSelector).length
     $instance.find('div[data-area="unselected"] .count').text unselectedOptionsCount
     $instance.find('div[data-area="selected"] .count').text selectedOptionsCount
     [unselectedOptionsCount, selectedOptionsCount]
@@ -288,7 +288,7 @@ do ($ = jQuery) ->
       unless @nodeName is 'SELECT'
         throw 'dualSelect only accept select element'
       # Dual select can't contains in dual select
-      if $(@).parents('.dual-select').size() > 0
+      if $(@).parents('.dual-select').length > 0
         throw 'dualSelect can not be initizied in dualSelect'
     
     # Start working
